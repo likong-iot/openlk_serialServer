@@ -1,0 +1,20 @@
+# ESP-IDF build
+build/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+managed_components/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+.cache/
+compile_commands.json
+.claude/
+.codex
+
+# Python
+__pycache__/
+*.pyc

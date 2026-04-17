@@ -1,0 +1,5 @@
+# Project-wide sdkconfig defaults for the base-distribution firmware.
+# Values here override ESP-IDF defaults and are preserved across reconfigure.
+
+# web_minimal's /ws/serial handler requires WebSocket support in esp_http_server.
+CONFIG_HTTPD_WS_SUPPORT=y
