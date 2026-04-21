@@ -137,6 +137,11 @@ static esp_err_t send_handler(httpd_req_t *req)
     }
 
     bool is_hex = cJSON_IsString(fmt) && !strcasecmp(fmt->valuestring, "hex");
+    if (!is_hex && data->valuestring[0] == '\0') {
+        cJSON_Delete(root);
+        return web_send_error(req, WEB_CODE_BAD_PARAM, "data required");
+    }
+
     size_t tx_len;
     uint8_t *tx;
 

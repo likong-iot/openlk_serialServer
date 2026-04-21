@@ -1,4 +1,5 @@
 #include "web_internal.h"
+#include "net_service.h"
 
 #include <string.h>
 #include "esp_log.h"
@@ -52,14 +53,32 @@ static esp_err_t favicon_handler(httpd_req_t *req)
     return httpd_resp_send(req, NULL, 0);
 }
 
+/* When upstream is unavailable, force clients into captive-portal flow. */
+static bool should_captive_redirect(void)
+{
+    net_status_t st = {0};
+    if (net_service_get_status(&st) != ESP_OK) return true;
+    return !st.got_ip;
+}
+
+static esp_err_t send_portal_redirect(httpd_req_t *req)
+{
+    httpd_resp_set_status(req, "302 Found");
+    httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/");
+    httpd_resp_set_type(req, "text/plain; charset=utf-8");
+    return httpd_resp_sendstr(req, "redirect");
+}
+
 static esp_err_t probe_204_handler(httpd_req_t *req)
 {
+    if (should_captive_redirect()) return send_portal_redirect(req);
     httpd_resp_set_status(req, "204 No Content");
     return httpd_resp_send(req, NULL, 0);
 }
 
 static esp_err_t probe_ok_text_handler(httpd_req_t *req)
 {
+    if (should_captive_redirect()) return send_portal_redirect(req);
     httpd_resp_set_type(req, "text/plain; charset=utf-8");
     httpd_resp_set_hdr (req, "Cache-Control", "no-store");
     return httpd_resp_sendstr(req, "Microsoft Connect Test");
@@ -67,6 +86,7 @@ static esp_err_t probe_ok_text_handler(httpd_req_t *req)
 
 static esp_err_t probe_hotspot_handler(httpd_req_t *req)
 {
+    if (should_captive_redirect()) return send_portal_redirect(req);
     httpd_resp_set_type(req, "text/html; charset=utf-8");
     httpd_resp_set_hdr (req, "Cache-Control", "no-store");
     return httpd_resp_sendstr(req, "<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>");

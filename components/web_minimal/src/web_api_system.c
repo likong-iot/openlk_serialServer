@@ -4,6 +4,7 @@
 #include "esp_system.h"
 #include "esp_chip_info.h"
 #include "esp_app_desc.h"
+#include <string.h>
 
 static esp_err_t status_handler(httpd_req_t *req)
 {
@@ -18,7 +19,10 @@ static esp_err_t status_handler(httpd_req_t *req)
     cJSON *d = cJSON_CreateObject();
 
     cJSON *net = cJSON_CreateObject();
-    cJSON_AddBoolToObject  (net, "wifi_up",  s.wifi_up);
+    bool wifi_up = strcmp(s.mode, "wifi") == 0 ? s.wifi_up : false;
+    cJSON_AddStringToObject(net, "mode",     s.mode);
+    cJSON_AddBoolToObject  (net, "link_up",  s.wifi_up);
+    cJSON_AddBoolToObject  (net, "wifi_up",  wifi_up);
     cJSON_AddBoolToObject  (net, "got_ip",   s.got_ip);
     cJSON_AddStringToObject(net, "ssid",     s.ssid);
     cJSON_AddNumberToObject(net, "rssi",     s.rssi);

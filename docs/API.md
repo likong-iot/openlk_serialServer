@@ -62,6 +62,11 @@
 { "applied": true, "reboot_required": true }
 ```
 
+约束：
+- `mode` 只能是 `wifi` 或 `eth`
+- `ip / mask / gateway` 若提供且非空，必须是合法 IPv4 文本
+- `password` 为空字符串时不覆盖已保存密码
+
 ---
 
 ## 2. 配串口
@@ -143,6 +148,9 @@
 
 `auth` 取值：`open / wep / wpa / wpa2 / wpa/2 / wpa2-ent / wpa3 / wpa2/3 / ?`。
 
+错误：
+- `409`：扫描忙（如上一次扫描尚未结束）
+
 ---
 
 ## 5. 系统
@@ -152,6 +160,8 @@
 ```jsonc
 {
   "net": {
+    "mode":     "wifi",
+    "link_up":  true,      // 通用链路状态：WiFi已关联 或 以太网链路up
     "wifi_up":  true,
     "got_ip":   true,
     "ssid":     "home-wifi",

@@ -1,6 +1,7 @@
 #include "web_internal.h"
 #include "net_service.h"
 
+#include "esp_wifi.h"
 #include "esp_wifi_types.h"
 
 #define MAX_APS 24
@@ -25,6 +26,9 @@ static esp_err_t scan_handler(httpd_req_t *req)
     net_scan_ap_t aps[MAX_APS];
     size_t n = 0;
     esp_err_t err = net_service_scan(aps, MAX_APS, &n);
+    if (err == ESP_ERR_WIFI_STATE) {
+        return web_send_error(req, WEB_CODE_BAD_STATE, "scan busy");
+    }
     if (err != ESP_OK) return web_send_error(req, WEB_CODE_INTERNAL, esp_err_to_name(err));
 
     cJSON *arr = cJSON_CreateArray();

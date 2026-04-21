@@ -38,6 +38,7 @@ static esp_netif_t *s_ap_netif;
 static esp_netif_t *s_eth_netif;
 static esp_eth_handle_t *s_eth_handles;
 static uint8_t       s_eth_cnt;
+static TaskHandle_t  s_reconnect_task;
 
 static struct {
     char    mode[8];            /* "wifi" | "eth" */
@@ -89,6 +90,7 @@ static void schedule_reconnect(void)
     if (s.backoff_ms < BACKOFF_MIN_MS) s.backoff_ms = BACKOFF_MIN_MS;
     ESP_LOGI(TAG, "STA reconnect in %lu ms", (unsigned long)s.backoff_ms);
     vTaskDelay(pdMS_TO_TICKS(s.backoff_ms));
+    if (s.link_up) return;
     s.backoff_ms = (s.backoff_ms * 2 > BACKOFF_MAX_MS) ? BACKOFF_MAX_MS : s.backoff_ms * 2;
     esp_wifi_connect();
 }
@@ -97,6 +99,7 @@ static void reconnect_task(void *arg)
 {
     (void)arg;
     schedule_reconnect();
+    s_reconnect_task = NULL;
     vTaskDelete(NULL);
 }
 
@@ -124,7 +127,13 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
             s.link_up = false;
             s.got_ip  = false;
             if (s.sta_configured) {
-                xTaskCreate(reconnect_task, "wifi_rc", 2048, NULL, 3, NULL);
+                if (!s_reconnect_task) {
+                    BaseType_t ok = xTaskCreate(reconnect_task, "wifi_rc", 2048, NULL, 3, &s_reconnect_task);
+                    if (ok != pdPASS) {
+                        s_reconnect_task = NULL;
+                        ESP_LOGW(TAG, "failed to create reconnect task");
+                    }
+                }
             }
             break;
         case WIFI_EVENT_AP_STACONNECTED:    ESP_LOGI(TAG, "AP: sta joined"); break;
