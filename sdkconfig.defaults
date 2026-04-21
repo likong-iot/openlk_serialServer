@@ -3,3 +3,5 @@
 
 # web_minimal's /ws/serial handler requires WebSocket support in esp_http_server.
 CONFIG_HTTPD_WS_SUPPORT=y
+
+CONFIG_LWIP_MAX_SOCKETS=16

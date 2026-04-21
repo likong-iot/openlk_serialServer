@@ -12,7 +12,8 @@ esp_err_t web_minimal_start(const web_minimal_config_t *cfg)
 
     httpd_config_t hc = HTTPD_DEFAULT_CONFIG();
     hc.server_port    = cfg && cfg->port ? cfg->port : 80;
-    hc.max_uri_handlers = 16;
+    /* API + WS + static assets + probe routes need headroom. */
+    hc.max_uri_handlers = 32;
     hc.max_open_sockets = cfg && cfg->max_sockets ? cfg->max_sockets : 7;
     hc.uri_match_fn     = httpd_uri_match_wildcard;
     hc.lru_purge_enable = true;

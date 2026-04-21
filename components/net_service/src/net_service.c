@@ -43,6 +43,7 @@ static struct {
     char    mode[8];            /* "wifi" | "eth" */
     bool    link_up;            /* STA joined | ETH link up */
     bool    got_ip;
+    bool    sta_configured;     /* whether STA credentials are present */
     int8_t  rssi;
     char    ssid[33];
     char    ip[16];
@@ -106,7 +107,11 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         switch (id) {
         case WIFI_EVENT_STA_START:
             apply_static_ip(s_sta_netif);
-            esp_wifi_connect();
+            if (s.sta_configured) {
+                esp_wifi_connect();
+            } else {
+                ESP_LOGI(TAG, "STA enabled but no credentials configured");
+            }
             break;
         case WIFI_EVENT_STA_CONNECTED: {
             wifi_event_sta_connected_t *e = data;
@@ -118,7 +123,9 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         case WIFI_EVENT_STA_DISCONNECTED:
             s.link_up = false;
             s.got_ip  = false;
-            xTaskCreate(reconnect_task, "wifi_rc", 2048, NULL, 3, NULL);
+            if (s.sta_configured) {
+                xTaskCreate(reconnect_task, "wifi_rc", 2048, NULL, 3, NULL);
+            }
             break;
         case WIFI_EVENT_AP_STACONNECTED:    ESP_LOGI(TAG, "AP: sta joined"); break;
         case WIFI_EVENT_AP_STADISCONNECTED: ESP_LOGI(TAG, "AP: sta left");   break;
@@ -213,10 +220,11 @@ static esp_err_t bring_up_wifi(bool with_sta)
         }
     }
 
-    wifi_mode_t mode = (with_sta && sta_ssid[0]) ? WIFI_MODE_APSTA : WIFI_MODE_AP;
+    s.sta_configured = with_sta && sta_ssid[0];
+    wifi_mode_t mode = with_sta ? WIFI_MODE_APSTA : WIFI_MODE_AP;
     ESP_ERROR_CHECK(esp_wifi_set_mode(mode));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap));
-    if (mode == WIFI_MODE_APSTA) {
+    if (with_sta) {
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta));
     }
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
@@ -232,7 +240,7 @@ static esp_err_t bring_up_wifi(bool with_sta)
     ESP_LOGI(TAG, "AP=\"%s\" (%s)  STA=%s",
              ap_ssid,
              ap.ap.authmode == WIFI_AUTH_OPEN ? "open" : "WPA2",
-             with_sta && sta_ssid[0] ? sta_ssid : "<disabled>");
+             s.sta_configured ? sta_ssid : "<configured=no>");
     return ESP_OK;
 }
 

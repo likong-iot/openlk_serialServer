@@ -46,6 +46,7 @@ static esp_err_t scan_handler(httpd_req_t *req)
 esp_err_t web_register_scan_api(httpd_handle_t server)
 {
     static const httpd_uri_t s = { .uri = "/api/network/scan", .method = HTTP_GET, .handler = scan_handler };
-    httpd_register_uri_handler(server, &s);
+    esp_err_t err = httpd_register_uri_handler(server, &s);
+    if (err != ESP_OK) return err;
     return ESP_OK;
 }

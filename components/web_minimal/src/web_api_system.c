@@ -62,7 +62,9 @@ esp_err_t web_register_system_api(httpd_handle_t server)
 {
     static const httpd_uri_t s  = { .uri = "/api/system/status", .method = HTTP_GET,  .handler = status_handler };
     static const httpd_uri_t rb = { .uri = "/api/system/reboot", .method = HTTP_POST, .handler = reboot_handler };
-    httpd_register_uri_handler(server, &s);
-    httpd_register_uri_handler(server, &rb);
+    esp_err_t err = httpd_register_uri_handler(server, &s);
+    if (err != ESP_OK) return err;
+    err = httpd_register_uri_handler(server, &rb);
+    if (err != ESP_OK) return err;
     return ESP_OK;
 }

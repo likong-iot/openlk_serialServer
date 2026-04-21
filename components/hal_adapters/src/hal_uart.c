@@ -1,6 +1,7 @@
 #include "hal_uart.h"
 
 #include "driver/uart.h"
+#include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 
 static const char *TAG = "hal_uart";
@@ -51,7 +52,14 @@ esp_err_t hal_uart_write(int port, const uint8_t *data, size_t len, size_t *out_
 esp_err_t hal_uart_read(int port, uint8_t *out, size_t len, uint32_t timeout_ms, size_t *out_read)
 {
     if (!out) return ESP_ERR_INVALID_ARG;
-    int n = uart_read_bytes(port, out, len, pdMS_TO_TICKS(timeout_ms));
+    /* Avoid busy-polling when timeout_ms is smaller than one RTOS tick.
+     * pdMS_TO_TICKS(5) can become 0 on 100 Hz systems, which would spin. */
+    TickType_t ticks = 0;
+    if (timeout_ms > 0) {
+        ticks = pdMS_TO_TICKS(timeout_ms);
+        if (ticks == 0) ticks = 1;
+    }
+    int n = uart_read_bytes(port, out, len, ticks);
     if (n < 0) return ESP_FAIL;
     if (out_read) *out_read = (size_t)n;
     return ESP_OK;

@@ -76,7 +76,9 @@ esp_err_t web_register_network_api(httpd_handle_t server)
 {
     static const httpd_uri_t g = { .uri = "/api/network", .method = HTTP_GET,  .handler = get_handler  };
     static const httpd_uri_t p = { .uri = "/api/network", .method = HTTP_POST, .handler = post_handler };
-    httpd_register_uri_handler(server, &g);
-    httpd_register_uri_handler(server, &p);
+    esp_err_t err = httpd_register_uri_handler(server, &g);
+    if (err != ESP_OK) return err;
+    err = httpd_register_uri_handler(server, &p);
+    if (err != ESP_OK) return err;
     return ESP_OK;
 }

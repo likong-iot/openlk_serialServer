@@ -46,6 +46,32 @@ static esp_err_t handler(httpd_req_t *req)
     return httpd_resp_send(req, (const char *)a->start, a->end - a->start);
 }
 
+static esp_err_t favicon_handler(httpd_req_t *req)
+{
+    httpd_resp_set_status(req, "204 No Content");
+    return httpd_resp_send(req, NULL, 0);
+}
+
+static esp_err_t probe_204_handler(httpd_req_t *req)
+{
+    httpd_resp_set_status(req, "204 No Content");
+    return httpd_resp_send(req, NULL, 0);
+}
+
+static esp_err_t probe_ok_text_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/plain; charset=utf-8");
+    httpd_resp_set_hdr (req, "Cache-Control", "no-store");
+    return httpd_resp_sendstr(req, "Microsoft Connect Test");
+}
+
+static esp_err_t probe_hotspot_handler(httpd_req_t *req)
+{
+    httpd_resp_set_type(req, "text/html; charset=utf-8");
+    httpd_resp_set_hdr (req, "Cache-Control", "no-store");
+    return httpd_resp_sendstr(req, "<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>");
+}
+
 static esp_err_t notfound_handler(httpd_req_t *req, httpd_err_code_t err)
 {
     (void)err;
@@ -61,8 +87,31 @@ esp_err_t web_register_static(httpd_handle_t server)
             .handler  = handler,
             .user_ctx = (void *)&ASSETS[i],
         };
-        httpd_register_uri_handler(server, &u);
+        esp_err_t err = httpd_register_uri_handler(server, &u);
+        if (err != ESP_OK) return err;
     }
-    httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, notfound_handler);
+
+    static const httpd_uri_t fav = {
+        .uri = "/favicon.ico", .method = HTTP_GET, .handler = favicon_handler
+    };
+    esp_err_t err = httpd_register_uri_handler(server, &fav);
+    if (err != ESP_OK) return err;
+
+    /* Common captive-portal / connectivity probes from phones and desktops. */
+    static const httpd_uri_t probes[] = {
+        { .uri = "/connecttest.txt",    .method = HTTP_GET, .handler = probe_ok_text_handler },
+        { .uri = "/ncsi.txt",           .method = HTTP_GET, .handler = probe_ok_text_handler },
+        { .uri = "/hotspot-detect.html",.method = HTTP_GET, .handler = probe_hotspot_handler },
+        { .uri = "/generate_204",       .method = HTTP_GET, .handler = probe_204_handler },
+        { .uri = "/pop/probe_v6_addr",  .method = HTTP_GET, .handler = probe_204_handler },
+        { .uri = "/mmtls/*",            .method = HTTP_GET, .handler = probe_204_handler },
+    };
+    for (size_t i = 0; i < sizeof(probes) / sizeof(probes[0]); ++i) {
+        err = httpd_register_uri_handler(server, &probes[i]);
+        if (err != ESP_OK) return err;
+    }
+
+    err = httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, notfound_handler);
+    if (err != ESP_OK) return err;
     return ESP_OK;
 }

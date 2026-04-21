@@ -133,9 +133,11 @@ esp_err_t web_register_serial_ws(httpd_handle_t server)
         .user_ctx    = NULL,
         .is_websocket = true,
     };
-    httpd_register_uri_handler(server, &u);
+    esp_err_t err = httpd_register_uri_handler(server, &u);
+    if (err != ESP_OK) return err;
 
     /* Bridge serial rx → ws broadcast. */
-    serial_service_register_rx_cb(on_serial_rx, NULL);
+    err = serial_service_register_rx_cb(on_serial_rx, NULL);
+    if (err != ESP_OK) return err;
     return ESP_OK;
 }
