@@ -84,6 +84,8 @@ components/
 docs/
   API.md               Web REST / WebSocket contract
   INTERFACES.md        C interface cheat-sheet for every service
+  DEVELOPMENT_TUTORIAL.md
+                       Interface-first secondary-development tutorial
   STUBS.md             Intentionally out-of-scope items
 ```
 
@@ -158,6 +160,9 @@ net_status_t st;
 net_service_get_status(&st);
 net_service_scan(aps, MAX_APS, &n);
 ```
+
+Secondary-development tutorial:
+[`docs/DEVELOPMENT_TUTORIAL.md`](docs/DEVELOPMENT_TUTORIAL.md)
 
 ---
 
