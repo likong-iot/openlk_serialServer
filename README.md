@@ -1,6 +1,6 @@
 # openlk — SP501LW 串口服务器固件
 
-面向 **力控 SP501LW** 串口网关、以及任何引脚兼容的 ESP32 串口转网络设备的
+面向 **立控电子 SP501LW** 串口网关、以及任何引脚兼容的 ESP32 串口转网络设备的
 开源固件。
 
 硬件页：<https://docv2.likong-iot.com/products/SerialServer/SP501LW>
@@ -216,4 +216,4 @@ Bug / 需求请到 GitHub Issue 反馈。
 
 ## License
 
-[Apache License 2.0](LICENSE). © 2026 Likong IoT.
+[Apache License 2.0](LICENSE). © 2026 立控电子.

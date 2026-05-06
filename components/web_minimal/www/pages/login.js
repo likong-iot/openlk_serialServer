@@ -25,7 +25,7 @@ function authShell(title, subtitle, body) {
       ]),
       body,
       el('footer', { class: 'auth-card__foot' },
-        '© Likong IoT · Serial Gateway'),
+        '© 立控电子 · Serial Gateway'),
     ]),
   ]);
 }
