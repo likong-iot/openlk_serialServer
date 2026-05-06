@@ -1,0 +1,25 @@
+idf_component_register(
+    SRCS        "src/web_minimal.c"
+                "src/web_api_network.c"
+                "src/web_api_scan.c"
+                "src/web_api_bridge.c"
+                "src/web_api_serial.c"
+                "src/web_api_system.c"
+                "src/web_ws_serial.c"
+                "src/web_static.c"
+                "src/web_json.c"
+    INCLUDE_DIRS "include"
+    PRIV_INCLUDE_DIRS "src"
+    REQUIRES    config_service serial_service net_service
+    PRIV_REQUIRES esp_http_server esp_wifi esp_netif json esp_timer app_update
+    EMBED_FILES "www/index.html"
+                "www/app.css"
+                "www/app.js"
+                "www/modules/api.js"
+                "www/modules/router.js"
+                "www/modules/ui.js"
+                "www/pages/network.js"
+                "www/pages/bridge.js"
+                "www/pages/serial.js"
+                "www/pages/console.js"
+)
