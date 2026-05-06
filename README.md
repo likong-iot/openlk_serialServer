@@ -27,8 +27,7 @@
 - **网络服务**——WiFi AP+STA、以太网（如硬件支持）、静态 IP、
   指数退避重连，以及首次配网用的 captive-portal DNS。
 - **精简 Web UI**——五页 SPA：基本信息、配网、串口、工作模式、串口调试
-  控制台（WebSocket）。HTML/CSS/原生 ES Module，无任何前端框架。
-  自适应手机/电脑，无 emoji，图标全部 SVG。
+  控制台（WebSocket）。HTML/CSS/原生 ES Module。
 - **可换板 HAL**——GPIO · UART · Timer 适配器，业务/服务层不直接
   包含芯片驱动头文件。
 
