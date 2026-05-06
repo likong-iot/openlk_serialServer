@@ -5,3 +5,8 @@
 CONFIG_HTTPD_WS_SUPPORT=y
 
 CONFIG_LWIP_MAX_SOCKETS=16
+
+# 1.5 MB factory partition — needed once the firmware grew past the default 1 MB
+# (auth + bridge + workmode UI). 2 MB flash is the SP501LW baseline.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+# CONFIG_PARTITION_TABLE_SINGLE_APP is not set

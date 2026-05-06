@@ -1,5 +1,6 @@
 #include "web_internal.h"
 #include "serial_service.h"
+#include "auth_service.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -95,7 +96,24 @@ void web_ws_serial_push_rx(const uint8_t *data, size_t len)
 static esp_err_t ws_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_GET) {
-        /* Handshake phase. Remember server+fd for push. */
+        /* Handshake phase. Browsers can't set Authorization on WS, so the
+         * page passes ?token=... in the URL. Validate before completing. */
+        size_t qlen = httpd_req_get_url_query_len(req);
+        bool ok = false;
+        if (qlen > 0 && qlen < 256) {
+            char q[256];
+            if (httpd_req_get_url_query_str(req, q, sizeof(q)) == ESP_OK) {
+                char tok[AUTH_TOKEN_BUF];
+                if (httpd_query_key_value(q, "token", tok, sizeof(tok)) == ESP_OK) {
+                    ok = auth_service_session_valid(tok);
+                }
+            }
+        }
+        if (!ok) {
+            httpd_resp_set_status(req, "401 Unauthorized");
+            httpd_resp_send(req, NULL, 0);
+            return ESP_FAIL;
+        }
         s_server = req->handle;
         add_client(httpd_req_to_sockfd(req));
         return ESP_OK;

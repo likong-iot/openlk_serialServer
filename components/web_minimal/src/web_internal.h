@@ -34,6 +34,20 @@ esp_err_t web_register_serial_ws(httpd_handle_t server);
 esp_err_t web_register_static(httpd_handle_t server);
 esp_err_t web_register_system_api(httpd_handle_t server);
 esp_err_t web_register_scan_api(httpd_handle_t server);
+esp_err_t web_register_auth_api(httpd_handle_t server);
+esp_err_t web_register_workmode_api(httpd_handle_t server);
 
 /* WS push from other threads (serial rx). No-op if no clients connected. */
 void web_ws_serial_push_rx(const uint8_t *data, size_t len);
+
+/*
+ * Auth guard.
+ * Returns ESP_OK iff the request carries a valid Bearer token AND, if the
+ * token's user has the must-change-password flag, the request is exempt
+ * (login / change-password / static).
+ *
+ * On failure, sends a 401 envelope and returns ESP_FAIL — callers must NOT
+ * write further to the request.
+ */
+#define WEB_CODE_UNAUTHORIZED  401
+esp_err_t web_auth_require(httpd_req_t *req);

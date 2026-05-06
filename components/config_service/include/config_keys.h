@@ -25,6 +25,16 @@
 /* WiFi AP (fallback) */
 #define CFG_KEY_WIFI_AP_SSID     "wifi.apssid"
 #define CFG_KEY_WIFI_AP_PASS     "wifi.appass"
+#define CFG_KEY_WIFI_AP_CHAN     "wifi.apchan"     /* 1..13 */
+
+/* Auth (web login).
+ * Why hashes only: NVS readout via fault-injection should not leak the
+ * cleartext password. Why mustchg: factory image ships admin/admin and we
+ * must force a change on first successful login. */
+#define CFG_KEY_AUTH_USER        "auth.user"        /* str */
+#define CFG_KEY_AUTH_PWHASH      "auth.pwhash"      /* hex SHA-256 of salt|pass */
+#define CFG_KEY_AUTH_SALT        "auth.salt"        /* hex 16-byte salt */
+#define CFG_KEY_AUTH_MUSTCHG     "auth.mustchg"     /* bool */
 
 /* Serial (UART) */
 #define CFG_KEY_SER_BAUD         "ser.baud"
@@ -34,6 +44,10 @@
 #define CFG_KEY_SER_FLOW_CTRL    "ser.flow"
 #define CFG_KEY_SER_FRAME_GAP    "ser.fgap"
 #define CFG_KEY_SER_RS485        "ser.rs485"
+
+/* Work mode (bridge_service).
+ * Values: "off" | "tcp_client" | "tcp_server" | "udp" | "mqtt" | "http". */
+#define CFG_KEY_WORKMODE         "wm.mode"
 
 /* TCP client (protocol) */
 #define CFG_KEY_TCP_HOST         "tcp.host"

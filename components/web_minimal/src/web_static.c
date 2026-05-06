@@ -15,8 +15,11 @@ DECLARE_EMBED(app_js)
 DECLARE_EMBED(api_js)
 DECLARE_EMBED(router_js)
 DECLARE_EMBED(ui_js)
+DECLARE_EMBED(login_js)
+DECLARE_EMBED(info_js)
 DECLARE_EMBED(network_js)
 DECLARE_EMBED(serial_js)
+DECLARE_EMBED(workmode_js)
 DECLARE_EMBED(console_js)
 
 typedef struct {
@@ -34,9 +37,12 @@ static const static_asset_t ASSETS[] = {
     { "/modules/api.js",          "application/javascript",   _binary_api_js_start,     _binary_api_js_end     },
     { "/modules/router.js",       "application/javascript",   _binary_router_js_start,  _binary_router_js_end  },
     { "/modules/ui.js",           "application/javascript",   _binary_ui_js_start,      _binary_ui_js_end      },
-    { "/pages/network.js",        "application/javascript",   _binary_network_js_start, _binary_network_js_end },
-    { "/pages/serial.js",         "application/javascript",   _binary_serial_js_start,  _binary_serial_js_end  },
-    { "/pages/console.js",        "application/javascript",   _binary_console_js_start, _binary_console_js_end },
+    { "/pages/login.js",          "application/javascript",   _binary_login_js_start,   _binary_login_js_end   },
+    { "/pages/info.js",           "application/javascript",   _binary_info_js_start,    _binary_info_js_end    },
+    { "/pages/network.js",        "application/javascript",   _binary_network_js_start,  _binary_network_js_end  },
+    { "/pages/serial.js",         "application/javascript",   _binary_serial_js_start,   _binary_serial_js_end   },
+    { "/pages/workmode.js",       "application/javascript",   _binary_workmode_js_start, _binary_workmode_js_end },
+    { "/pages/console.js",        "application/javascript",   _binary_console_js_start,  _binary_console_js_end  },
 };
 
 static esp_err_t handler(httpd_req_t *req)

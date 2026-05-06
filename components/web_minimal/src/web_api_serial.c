@@ -31,6 +31,7 @@ static serial_parity_t parity_from_str(const char *s)
 
 static esp_err_t get_handler(httpd_req_t *req)
 {
+    if (web_auth_require(req) != ESP_OK) return ESP_OK;
     serial_config_t c = {0};
     if (serial_service_get_config(&c) != ESP_OK) {
         return web_send_error(req, WEB_CODE_INTERNAL, "serial not ready");
@@ -49,6 +50,7 @@ static esp_err_t get_handler(httpd_req_t *req)
 
 static esp_err_t post_handler(httpd_req_t *req)
 {
+    if (web_auth_require(req) != ESP_OK) return ESP_OK;
     char *body = web_read_body(req, 2048);
     if (!body) return web_send_error(req, WEB_CODE_BAD_PARAM, "body required");
 
@@ -122,6 +124,7 @@ static int decode_hex(const char *s, uint8_t *out, size_t cap)
 
 static esp_err_t send_handler(httpd_req_t *req)
 {
+    if (web_auth_require(req) != ESP_OK) return ESP_OK;
     char *body = web_read_body(req, 16 * 1024);
     if (!body) return web_send_error(req, WEB_CODE_BAD_PARAM, "body required");
 

@@ -1,4 +1,4 @@
-# Secondary Development Tutorial (Interface-First)
+# 二次开发实战教程（接口优先）
 
 本文是一份在 `openlk` 基础上进行二次开发的实战教程，重点回答一个问题：
 
@@ -7,8 +7,15 @@
 目标读者：
 
 - 需要在此固件上开发网关业务逻辑的工程师
-- 需要把串口数据桥接到 TCP/MQTT/UDP/HTTP 的开发者
+- 需要把串口数据桥接到 TCP / MQTT / UDP / HTTP 的开发者
 - 需要通过 Web API 做设备编排的上位机/平台开发者
+
+> **先看一眼是否已经够用**
+> 单纯的"串口透传到 TCP / MQTT / UDP / HTTP"已经由内置的
+> [`bridge_service`](INTERFACES.md#bridge_service) 自动覆盖，Web `工作模式`
+> 页一键切换即可，不需要再写代码。
+> 本教程主要面向 **更复杂** 的业务：协议封装、Modbus 网关、平台上报模板、
+> 多协议路由分流等。下文以"自定义 TCP 桥"为例讲清楚分层与生命周期。
 
 ---
 
@@ -431,14 +438,24 @@ idf.py -p /dev/ttyUSB0 flash monitor
 
 ## 10. 重点：只用现有 Web 接口也能实现功能
 
-很多功能不需要立刻改固件代码，可以先用 Web API 编排：
+很多功能不需要立刻改固件代码，可以先用 Web API 编排。
+
+> 所有受保护接口都需要先登录拿 token，再带 `Authorization: Bearer <token>`：
+>
+> ```bash
+> TOKEN=$(curl -s -X POST http://192.168.4.1/api/auth/login \
+>   -H 'Content-Type: application/json' \
+>   -d '{"user":"admin","password":"yourpass"}' | jq -r .data.token)
+> AUTH="-H 'Authorization: Bearer $TOKEN'"
+> ```
 
 ### 10.1 功能 A：自动配网并重启生效
 
 ```bash
-curl -s http://192.168.4.1/api/network
+curl -s -H "Authorization: Bearer $TOKEN" http://192.168.4.1/api/network
 
 curl -s -X POST http://192.168.4.1/api/network \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "mode":"wifi",
@@ -447,22 +464,26 @@ curl -s -X POST http://192.168.4.1/api/network \
     "password":"12345678"
   }'
 
-curl -s -X POST http://192.168.4.1/api/system/reboot -H 'Content-Type: application/json' -d '{}'
+curl -s -X POST http://192.168.4.1/api/system/reboot \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{}'
 ```
 
 ### 10.2 功能 B：远程串口调试脚本
 
 ```bash
 # 读当前串口配置
-curl -s http://192.168.4.1/api/serial
+curl -s -H "Authorization: Bearer $TOKEN" http://192.168.4.1/api/serial
 
 # 更新串口参数
 curl -s -X POST http://192.168.4.1/api/serial \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"baud":9600,"data_bits":8,"stop_bits":1,"parity":"none","flow_ctrl":false,"rs485":false,"frame_gap_ms":10}'
 
 # 发 HEX 指令
 curl -s -X POST http://192.168.4.1/api/serial/send \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"fmt":"hex","data":"01 03 00 00 00 02 C4 0B"}'
 ```
@@ -470,20 +491,31 @@ curl -s -X POST http://192.168.4.1/api/serial/send \
 ### 10.3 功能 C：扫描网络并筛选最优 AP
 
 ```bash
-curl -s http://192.168.4.1/api/network/scan
+curl -s -H "Authorization: Bearer $TOKEN" http://192.168.4.1/api/network/scan
 ```
 
 你可以在上位机按 `rssi`、`auth` 做策略筛选，再调用 `POST /api/network` 下发。
 
-### 10.4 功能 D：前端实时串口监视
+### 10.4 功能 D：批量切换工作模式
+
+```bash
+curl -s -X POST http://192.168.4.1/api/workmode \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"mode":"tcp_client","tcp_client":{"host":"192.168.1.100","port":9000,"reconn_ms":2000}}'
+```
+
+下发后 `bridge_service` 立刻重启桥，无需重启设备。
+
+### 10.5 功能 E：前端实时串口监视
 
 - REST 用于发送：`POST /api/serial/send`
-- WebSocket 用于接收：`/ws/serial`
+- WebSocket 用于接收：`/ws/serial?token=…`
 
 浏览器侧最小示例：
 
 ```js
-const ws = new WebSocket(`ws://${location.host}/ws/serial`);
+const ws = new WebSocket(`ws://${location.host}/ws/serial?token=${TOKEN}`);
 ws.onmessage = (e) => {
   const f = JSON.parse(e.data);
   if (f.dir === "rx") console.log(f.ts, f.data);

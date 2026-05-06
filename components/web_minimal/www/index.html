@@ -2,27 +2,57 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Serial Gateway · Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Serial Gateway · 控制台</title>
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand__mark"></span>
-      <span class="brand__name">Serial Gateway</span>
-    </div>
-    <nav class="tabs" role="tablist" aria-label="Main">
-      <a class="tab" role="tab" href="#/network" data-route="network">配网</a>
-      <a class="tab" role="tab" href="#/serial"  data-route="serial">串口</a>
-      <a class="tab" role="tab" href="#/console" data-route="console">调试</a>
-    </nav>
-    <div class="status" id="conn-status" aria-live="polite">
-      <span class="dot"></span><span class="status__text">—</span>
-    </div>
-  </header>
+  <div id="shell" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16M4 12h10M4 17h16" />
+            <circle cx="18" cy="12" r="2" fill="currentColor" stroke="none" />
+          </svg>
+        </span>
+        <span class="brand__name">Serial Gateway</span>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Main">
+        <a class="tab" role="tab" href="#/info"     data-route="info">基本信息</a>
+        <a class="tab" role="tab" href="#/network"  data-route="network">配网</a>
+        <a class="tab" role="tab" href="#/serial"   data-route="serial">串口</a>
+        <a class="tab" role="tab" href="#/workmode" data-route="workmode">工作模式</a>
+        <a class="tab" role="tab" href="#/console"  data-route="console">调试</a>
+      </nav>
+      <div class="topbar__right">
+        <div class="status" id="conn-status" aria-live="polite">
+          <span class="dot"></span><span class="status__text">—</span>
+        </div>
+        <div class="user-menu" id="user-menu" hidden>
+          <button class="user-menu__btn" type="button" aria-label="账户菜单">
+            <span class="user-menu__avatar" id="user-avatar">U</span>
+            <span class="user-menu__name"   id="user-name">user</span>
+            <svg class="user-menu__chev" viewBox="0 0 24 24" width="14" height="14"
+                 fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <div class="user-menu__panel" role="menu">
+            <button type="button" data-act="changepw" role="menuitem">修改密码</button>
+            <button type="button" data-act="logout"   role="menuitem">注销</button>
+          </div>
+        </div>
+      </div>
+    </header>
 
-  <main id="view" class="view" aria-live="polite"></main>
+    <main id="view" class="view" aria-live="polite"></main>
+  </div>
+
+  <main id="auth-view" class="auth-view"></main>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

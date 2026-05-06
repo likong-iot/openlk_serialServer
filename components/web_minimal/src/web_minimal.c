@@ -31,9 +31,11 @@ esp_err_t web_minimal_start(const web_minimal_config_t *cfg)
     esp_err_t err = httpd_start(&s_server, &hc);
     if (err != ESP_OK) { ESP_LOGE(TAG, "httpd_start: %s", esp_err_to_name(err)); return err; }
 
-    ESP_ERROR_CHECK(web_register_network_api(s_server));
-    ESP_ERROR_CHECK(web_register_scan_api   (s_server));
-    ESP_ERROR_CHECK(web_register_serial_api (s_server));
+    ESP_ERROR_CHECK(web_register_auth_api    (s_server));
+    ESP_ERROR_CHECK(web_register_network_api (s_server));
+    ESP_ERROR_CHECK(web_register_scan_api    (s_server));
+    ESP_ERROR_CHECK(web_register_serial_api  (s_server));
+    ESP_ERROR_CHECK(web_register_workmode_api(s_server));
     err = web_register_serial_ws(s_server);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "serial ws disabled: %s", esp_err_to_name(err));

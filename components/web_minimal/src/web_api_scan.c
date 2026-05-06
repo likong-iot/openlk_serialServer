@@ -23,6 +23,7 @@ static const char *authmode_name(uint8_t mode)
 
 static esp_err_t scan_handler(httpd_req_t *req)
 {
+    if (web_auth_require(req) != ESP_OK) return ESP_OK;
     net_scan_ap_t aps[MAX_APS];
     size_t n = 0;
     esp_err_t err = net_service_scan(aps, MAX_APS, &n);

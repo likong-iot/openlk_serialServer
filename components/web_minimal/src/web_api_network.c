@@ -13,28 +13,35 @@
 
 static esp_err_t get_handler(httpd_req_t *req)
 {
-    char  mode[8]  = {0};
-    char  ssid[33] = {0};
-    char  ip[16]   = {0};
-    char  mask[16] = {0};
-    char  gw[16]   = {0};
-    bool  dhcp     = true;
+    if (web_auth_require(req) != ESP_OK) return ESP_OK;
+    char  mode[8]    = {0};
+    char  ssid[33]   = {0};
+    char  ip[16]     = {0};
+    char  mask[16]   = {0};
+    char  gw[16]     = {0};
+    char  ap_ssid[33] = {0};
+    bool  dhcp       = true;
+    int32_t ap_chan  = 1;
 
-    config_get_str (CFG_KEY_NET_MODE, mode, sizeof(mode), "wifi");
-    config_get_bool(CFG_KEY_NET_DHCP, &dhcp, true);
-    config_get_str (CFG_KEY_WIFI_SSID, ssid, sizeof(ssid), "");
-    config_get_str (CFG_KEY_NET_IP,   ip,   sizeof(ip),   "");
-    config_get_str (CFG_KEY_NET_MASK, mask, sizeof(mask), "");
-    config_get_str (CFG_KEY_NET_GW,   gw,   sizeof(gw),   "");
+    config_get_str (CFG_KEY_NET_MODE,    mode,    sizeof(mode),    "wifi");
+    config_get_bool(CFG_KEY_NET_DHCP,    &dhcp,                    true);
+    config_get_str (CFG_KEY_WIFI_SSID,   ssid,    sizeof(ssid),    "");
+    config_get_str (CFG_KEY_NET_IP,      ip,      sizeof(ip),      "");
+    config_get_str (CFG_KEY_NET_MASK,    mask,    sizeof(mask),    "");
+    config_get_str (CFG_KEY_NET_GW,      gw,      sizeof(gw),      "");
+    config_get_str (CFG_KEY_WIFI_AP_SSID,ap_ssid, sizeof(ap_ssid), "");
+    config_get_int (CFG_KEY_WIFI_AP_CHAN,&ap_chan,                 1);
 
     cJSON *d = cJSON_CreateObject();
-    cJSON_AddStringToObject(d, "mode", mode);
-    cJSON_AddBoolToObject  (d, "dhcp", dhcp);
-    cJSON_AddStringToObject(d, "ssid", ssid);
-    cJSON_AddStringToObject(d, "ip",   ip);
-    cJSON_AddStringToObject(d, "mask", mask);
-    cJSON_AddStringToObject(d, "gateway", gw);
-    /* Password intentionally not returned. */
+    cJSON_AddStringToObject(d, "mode",       mode);
+    cJSON_AddBoolToObject  (d, "dhcp",       dhcp);
+    cJSON_AddStringToObject(d, "ssid",       ssid);
+    cJSON_AddStringToObject(d, "ip",         ip);
+    cJSON_AddStringToObject(d, "mask",       mask);
+    cJSON_AddStringToObject(d, "gateway",    gw);
+    cJSON_AddStringToObject(d, "ap_ssid",    ap_ssid);
+    cJSON_AddNumberToObject(d, "ap_channel", ap_chan);
+    /* Passwords intentionally not returned. */
     return web_send_json(req, WEB_CODE_OK, "ok", d);
 }
 
@@ -52,6 +59,7 @@ static bool is_valid_ipv4_or_empty(const char *s)
 
 static esp_err_t post_handler(httpd_req_t *req)
 {
+    if (web_auth_require(req) != ESP_OK) return ESP_OK;
     char *body = web_read_body(req, 4096);
     if (!body) return web_send_error(req, WEB_CODE_BAD_PARAM, "body required");
 
@@ -59,13 +67,16 @@ static esp_err_t post_handler(httpd_req_t *req)
     free(body);
     if (!root) return web_send_error(req, WEB_CODE_BAD_PARAM, "invalid json");
 
-    const cJSON *mode = cJSON_GetObjectItem(root, "mode");
-    const cJSON *dhcp = cJSON_GetObjectItem(root, "dhcp");
-    const cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
-    const cJSON *pass = cJSON_GetObjectItem(root, "password");
-    const cJSON *ip   = cJSON_GetObjectItem(root, "ip");
-    const cJSON *mask = cJSON_GetObjectItem(root, "mask");
-    const cJSON *gw   = cJSON_GetObjectItem(root, "gateway");
+    const cJSON *mode    = cJSON_GetObjectItem(root, "mode");
+    const cJSON *dhcp    = cJSON_GetObjectItem(root, "dhcp");
+    const cJSON *ssid    = cJSON_GetObjectItem(root, "ssid");
+    const cJSON *pass    = cJSON_GetObjectItem(root, "password");
+    const cJSON *ip      = cJSON_GetObjectItem(root, "ip");
+    const cJSON *mask    = cJSON_GetObjectItem(root, "mask");
+    const cJSON *gw      = cJSON_GetObjectItem(root, "gateway");
+    const cJSON *ap_ssid = cJSON_GetObjectItem(root, "ap_ssid");
+    const cJSON *ap_pass = cJSON_GetObjectItem(root, "ap_password");
+    const cJSON *ap_chan = cJSON_GetObjectItem(root, "ap_channel");
 
     if (cJSON_IsString(mode) && !is_valid_mode(mode->valuestring)) {
         cJSON_Delete(root);
@@ -83,6 +94,25 @@ static esp_err_t post_handler(httpd_req_t *req)
         cJSON_Delete(root);
         return web_send_error(req, WEB_CODE_BAD_PARAM, "bad gateway");
     }
+    if (cJSON_IsString(ap_ssid)) {
+        size_t l = strlen(ap_ssid->valuestring);
+        if (l == 0 || l > 32) {
+            cJSON_Delete(root);
+            return web_send_error(req, WEB_CODE_BAD_PARAM, "ap_ssid 1..32 chars");
+        }
+    }
+    if (cJSON_IsString(ap_pass)) {
+        size_t l = strlen(ap_pass->valuestring);
+        /* WPA2 PSK requires 8..63 chars. Empty means "open AP" — discouraged but allowed. */
+        if (l != 0 && (l < 8 || l > 63)) {
+            cJSON_Delete(root);
+            return web_send_error(req, WEB_CODE_BAD_PARAM, "ap_password 8..63 or empty");
+        }
+    }
+    if (cJSON_IsNumber(ap_chan) && (ap_chan->valueint < 1 || ap_chan->valueint > 13)) {
+        cJSON_Delete(root);
+        return web_send_error(req, WEB_CODE_BAD_PARAM, "ap_channel 1..13");
+    }
 
     esp_err_t err = ESP_OK;
     if (cJSON_IsString(mode)) err = config_set_str(CFG_KEY_NET_MODE, mode->valuestring);
@@ -93,6 +123,9 @@ static esp_err_t post_handler(httpd_req_t *req)
     if (err == ESP_OK && cJSON_IsString(ip)) err = config_set_str(CFG_KEY_NET_IP, ip->valuestring);
     if (err == ESP_OK && cJSON_IsString(mask)) err = config_set_str(CFG_KEY_NET_MASK, mask->valuestring);
     if (err == ESP_OK && cJSON_IsString(gw)) err = config_set_str(CFG_KEY_NET_GW, gw->valuestring);
+    if (err == ESP_OK && cJSON_IsString(ap_ssid)) err = config_set_str(CFG_KEY_WIFI_AP_SSID, ap_ssid->valuestring);
+    if (err == ESP_OK && cJSON_IsString(ap_pass) && ap_pass->valuestring[0]) err = config_set_str(CFG_KEY_WIFI_AP_PASS, ap_pass->valuestring);
+    if (err == ESP_OK && cJSON_IsNumber(ap_chan)) err = config_set_int(CFG_KEY_WIFI_AP_CHAN, ap_chan->valueint);
 
     cJSON_Delete(root);
     if (err != ESP_OK) return web_send_error(req, WEB_CODE_INTERNAL, esp_err_to_name(err));
