@@ -13,8 +13,11 @@ esp_err_t web_minimal_start(const web_minimal_config_t *cfg)
 
     httpd_config_t hc = HTTPD_DEFAULT_CONFIG();
     hc.server_port    = cfg && cfg->port ? cfg->port : 80;
-    /* API + WS + static assets + probe routes need headroom. */
-    hc.max_uri_handlers = 32;
+    /* API + WS + static assets + captive probes need headroom.
+     * Current count (auth4 + network2 + scan1 + serial3 + workmode3 +
+     * system3 + ws1 + static13 + favicon1 + probes6 = 37) overflows the
+     * default 8; we keep ~25% slack for new endpoints. */
+    hc.max_uri_handlers = 48;
     uint16_t req_socks = cfg && cfg->max_sockets ? cfg->max_sockets : 7;
     /* httpd internally reserves 3 sockets; DNS captive service uses one more. */
     int safe_open_socks = CONFIG_LWIP_MAX_SOCKETS - 4;
